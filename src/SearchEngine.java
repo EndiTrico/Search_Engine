@@ -123,15 +123,126 @@ public class SearchEngine {
 //        documents.put(2, List.of("cake", "sugar", "eggs", "flour", "sugar", "cocoa", "cream", "butter"));
 //        documents.put(3, List.of("soup", "fish", "potato", "salt", "pepper"));
 //    }
+/**
+ * SECOND WAY
+ */
+//    private Map<String, Set<Integer>> index;
+//
+//    public SearchEngine() {
+//        index = new HashMap<>();
+//    }
+//
+//    public Map<String, Set<Integer>> getIndex() {
+//        return index;
+//    }
+//
+//    public void indexDocument(String docId, String document) {
+//        String[] tokens = document.toLowerCase().split(" ");
+//
+//        if (!isNumeric(docId)) {
+//            System.out.println("index error The document ID does NOT contain only numbers");
+//            return;
+//        }
+//
+//        int documentID = Integer.parseInt(docId);
+//
+//        if (tokens.length != 0) {
+//            for (String token : tokens) {
+//                if (!isAlphanumeric(token)) {
+//                    System.out.println("index error Invalid token: " + token);
+//                    return;
+//                } else
+//                    index.computeIfAbsent(token, k -> new HashSet<>()).add(documentID);
+//            }
+//        } else {
+//            System.out.println("index error Tokens cannot be empty");
+//            return;
+//        }
+//
+//        System.out.println("index ok " + documentID);
+//
+//    }
+//
+//    public Set<Integer> executeQuery(String query) {
+//        Stack<Set<Integer>> stack = new Stack<>();
+//        Stack<Character> opStack = new Stack<>();
+//
+//        String[] tokens = query.toLowerCase().split(" ");
+//        for (String token : tokens) {
+//            if (token.equals("(")) {
+//                opStack.push('(');
+//            } else if (token.equals(")")) {
+//                while (!opStack.isEmpty() && opStack.peek() != '(') {
+//                    applyOperator(stack, opStack.pop());
+//                }
+//                opStack.pop(); // Pop the '('
+//            } else if (token.equals("&") || token.equals("|")) {
+//                while (!opStack.isEmpty() && opStack.peek() != '(') {
+//                    applyOperator(stack, opStack.pop());
+//                }
+//                opStack.push(token.charAt(0));
+//            } else {
+//                stack.push(getMatchingDocuments(token));
+//            }
+//        }
+//
+//        while (!opStack.isEmpty()) {
+//            applyOperator(stack, opStack.pop());
+//        }
+//
+//        return stack.isEmpty() ? new HashSet<>() : stack.pop();
+//    }
+//
+//    private void applyOperator(Stack<Set<Integer>> stack, char operator) {
+//        Set<Integer> set2 = stack.pop();
+//        Set<Integer> set1 = stack.pop();
+//
+//        if (operator == '&') {
+//            stack.push(intersect(set1, set2));
+//        } else if (operator == '|') {
+//            stack.push(union(set1, set2));
+//        }
+//    }
+//
+//    private Set<Integer> getMatchingDocuments(String token) {
+//        return index.getOrDefault(token, new HashSet<>());
+//    }
+//
+//    private Set<Integer> intersect(Set<Integer> set1, Set<Integer> set2) {
+//        Set<Integer> result = new HashSet<>(set1);
+//        result.retainAll(set2);
+//        return result;
+//    }
+//
+//    private Set<Integer> union(Set<Integer> set1, Set<Integer> set2) {
+//        Set<Integer> result = new HashSet<>(set1);
+//        result.addAll(set2);
+//        return result;
+//    }
+//
+//    public boolean isNumeric(String documentID) {
+//        return documentID.matches("0|([1-9]\\d*)");
+//    }
+//
+//    public boolean isAlphanumeric(String documentID) {
+//        return documentID.matches("^[a-zA-Z0-9]+$");
+//    }
+//
+//    public Map<Integer, List<String>> getIndex() {
+//        return index;
+//    }
 
-    private Map<String, Set<Integer>> index;
+private Map<Integer, List<String>> index;
 
     public SearchEngine() {
         index = new HashMap<>();
     }
 
-    public void indexDocument(String docId, String document) {
-        String[] tokens = document.toLowerCase().split(" ");
+    public Map<Integer, List<String>> getIndex() {
+        return index;
+    }
+
+    public void indexCommand(String docId, List<String> tokens) {
 
         if (!isNumeric(docId)) {
             System.out.println("index error The document ID does NOT contain only numbers");
@@ -140,43 +251,70 @@ public class SearchEngine {
 
         int documentID = Integer.parseInt(docId);
 
-        if (tokens.length != 0) {
+        if (!tokens.isEmpty()) {
             for (String token : tokens) {
                 if (!isAlphanumeric(token)) {
                     System.out.println("index error Invalid token: " + token);
                     return;
-                } else
-                    index.computeIfAbsent(token, k -> new HashSet<>()).add(documentID);
+                }
             }
         } else {
             System.out.println("index error Tokens cannot be empty");
             return;
         }
 
-        System.out.println("index ok " + documentID);
+        index.put(documentID, tokens);
 
+        System.out.println("index ok " + documentID);
     }
 
-    public Set<Integer> executeQuery(String query) {
-        Stack<Set<Integer>> stack = new Stack<>();
+    public List<String> queryCommand(String query) {
+        Stack<List<String>> stack = new Stack<>();
         Stack<Character> opStack = new Stack<>();
 
+        String state = "start";
+
         String[] tokens = query.toLowerCase().split(" ");
+
         for (String token : tokens) {
             if (token.equals("(")) {
-                opStack.push('(');
+                if (state.equals("start") || state.equals("symbol")) {
+                    opStack.push('(');
+                    state = "openingParenthesis";
+                } else {
+                    System.out.println("query error wrong order of opening parenthesis");
+                    break;
+                }
             } else if (token.equals(")")) {
-                while (!opStack.isEmpty() && opStack.peek() != '(') {
-                    applyOperator(stack, opStack.pop());
+                if (state.equals("token")) {
+                    while (!opStack.isEmpty() && opStack.peek() != '(') {
+                        applyOperator(stack, opStack.pop());
+                    }
+                    opStack.pop(); // Pop the '('
+                    state = "closingParenthesis";
+                } else {
+                    System.out.println("query error wrong order of closing parenthesis");
+                    break;
                 }
-                opStack.pop(); // Pop the '('
             } else if (token.equals("&") || token.equals("|")) {
-                while (!opStack.isEmpty() && opStack.peek() != '(') {
-                    applyOperator(stack, opStack.pop());
+                if (state.equals("token") || state.equals("closingParenthesis")) {
+                    while (!opStack.isEmpty() && opStack.peek() != '(') {
+                        applyOperator(stack, opStack.pop());
+                    }
+                    opStack.push(token.charAt(0));
+                    state = "symbol";
+                } else {
+                    System.out.println("query error wrong order of " + token);
+                    break;
                 }
-                opStack.push(token.charAt(0));
             } else {
-                stack.push(getMatchingDocuments(token));
+                if (state.equals("start") || state.equals("symbol") || state.equals("openingParenthesis")) {
+                    stack.push(getMatchingDocuments(token));
+                    state = "token";
+                } else {
+                    System.out.println("query error wrong order of token");
+                    break;
+                }
             }
         }
 
@@ -184,33 +322,44 @@ public class SearchEngine {
             applyOperator(stack, opStack.pop());
         }
 
-        return stack.isEmpty() ? new HashSet<>() : stack.pop();
+
+        return stack.isEmpty() ? new ArrayList<>() : stack.pop();
     }
 
-    private void applyOperator(Stack<Set<Integer>> stack, char operator) {
-        Set<Integer> set2 = stack.pop();
-        Set<Integer> set1 = stack.pop();
+    private void applyOperator(Stack<List<String>> stack, char operator) {
+        try {
+            List<String> list2 = stack.pop();
+            List<String> list1 = stack.pop();
 
-        if (operator == '&') {
-            stack.push(intersect(set1, set2));
-        } else if (operator == '|') {
-            stack.push(union(set1, set2));
+            if (operator == '&') {
+                stack.push(intersect(list1, list2));
+            } else if (operator == '|') {
+                stack.push(union(list1, list2));
+            }
+        } catch (Exception e) {
+            System.out.println("query error empty stack");
         }
     }
 
-    private Set<Integer> getMatchingDocuments(String token) {
-        return index.getOrDefault(token, new HashSet<>());
-    }
-
-    private Set<Integer> intersect(Set<Integer> set1, Set<Integer> set2) {
-        Set<Integer> result = new HashSet<>(set1);
-        result.retainAll(set2);
+    private List<String> getMatchingDocuments(String token) {
+        List<String> result = new ArrayList<>();
+        for (Map.Entry<Integer, List<String>> entry : index.entrySet()) {
+            if (entry.getValue().contains(token)) {
+                result.add(entry.getKey().toString());
+            }
+        }
         return result;
     }
 
-    private Set<Integer> union(Set<Integer> set1, Set<Integer> set2) {
-        Set<Integer> result = new HashSet<>(set1);
-        result.addAll(set2);
+    private List<String> intersect(List<String> list1, List<String> list2) {
+        List<String> result = new ArrayList<>(list1);
+        result.retainAll(list2);
+        return result;
+    }
+
+    private List<String> union(List<String> list1, List<String> list2) {
+        List<String> result = new ArrayList<>(list1);
+        result.addAll(list2);
         return result;
     }
 
