@@ -110,19 +110,19 @@ public class SearchEngine {
 //        return documentID.matches("^[a-zA-Z0-9]+$");
 //    }
 //
-//    public void retrieveSomeDocuments() {
-//
-////        documents.put(1, List.of("pasta", "soup", "pizza", "spaghetti", "risotto", "fish"));
-////        documents.put(2, List.of("dog", "cat", "bird", "shark", "dolphin", "fish", "eagle", "elephant", "crocodile", "giraffe"));
-////        documents.put(3, List.of("red", "blue", "yellow", "orange", "green", "white", "black", "purple", "pink"));
-////        documents.put(4, List.of("xiaomi", "nokia", "samsung", "apple", "huawei"));
-////        documents.put(5, List.of("computer", "mouse", "monitor", "keyboard", "printer", "motherboard", "cpu", "usb", "disk"));
-////        documents.put(6, List.of("rose", "lily", "iris", "tulip", "lotus", "daisy", "sunflower", "orchid"));
-//
-//        documents.put(1, List.of("bread", "butter", "salt"));
-//        documents.put(2, List.of("cake", "sugar", "eggs", "flour", "sugar", "cocoa", "cream", "butter"));
-//        documents.put(3, List.of("soup", "fish", "potato", "salt", "pepper"));
-//    }
+public void retrieveSomeDocuments() {
+
+//        documents.put(1, List.of("pasta", "soup", "pizza", "spaghetti", "risotto", "fish"));
+//        documents.put(2, List.of("dog", "cat", "bird", "shark", "dolphin", "fish", "eagle", "elephant", "crocodile", "giraffe"));
+//        documents.put(3, List.of("red", "blue", "yellow", "orange", "green", "white", "black", "purple", "pink"));
+//        documents.put(4, List.of("xiaomi", "nokia", "samsung", "apple", "huawei"));
+//        documents.put(5, List.of("computer", "mouse", "monitor", "keyboard", "printer", "motherboard", "cpu", "usb", "disk"));
+//        documents.put(6, List.of("rose", "lily", "iris", "tulip", "lotus", "daisy", "sunflower", "orchid"));
+
+    index.put(1, List.of("bread", "butter", "salt"));
+    index.put(2, List.of("cake", "sugar", "eggs", "flour", "sugar", "cocoa", "cream", "butter"));
+    index.put(3, List.of("soup", "fish", "potato", "salt", "pepper"));
+}
 /**
  * SECOND WAY
  */
@@ -236,6 +236,7 @@ private Map<Integer, List<String>> index;
 
     public SearchEngine() {
         index = new HashMap<>();
+        retrieveSomeDocuments();
     }
 
     public Map<Integer, List<String>> getIndex() {
@@ -268,8 +269,8 @@ private Map<Integer, List<String>> index;
         System.out.println("index ok " + documentID);
     }
 
-    public List<String> queryCommand(String query) {
-        Stack<List<String>> stack = new Stack<>();
+    public Set<String> queryCommand(String query) {
+        Stack<Set<String>> stack = new Stack<>();
         Stack<Character> opStack = new Stack<>();
 
         String state = "start";
@@ -283,7 +284,7 @@ private Map<Integer, List<String>> index;
                     state = "openingParenthesis";
                 } else {
                     System.out.println("query error wrong order of opening parenthesis");
-                    break;
+                    return new HashSet<>();
                 }
             } else if (token.equals(")")) {
                 if (state.equals("token")) {
@@ -294,7 +295,7 @@ private Map<Integer, List<String>> index;
                     state = "closingParenthesis";
                 } else {
                     System.out.println("query error wrong order of closing parenthesis");
-                    break;
+                    return new HashSet<>();
                 }
             } else if (token.equals("&") || token.equals("|")) {
                 if (state.equals("token") || state.equals("closingParenthesis")) {
@@ -305,7 +306,7 @@ private Map<Integer, List<String>> index;
                     state = "symbol";
                 } else {
                     System.out.println("query error wrong order of " + token);
-                    break;
+                    return new HashSet<>();
                 }
             } else {
                 if (state.equals("start") || state.equals("symbol") || state.equals("openingParenthesis")) {
@@ -313,7 +314,7 @@ private Map<Integer, List<String>> index;
                     state = "token";
                 } else {
                     System.out.println("query error wrong order of token");
-                    break;
+                    return new HashSet<>();
                 }
             }
         }
@@ -322,14 +323,18 @@ private Map<Integer, List<String>> index;
             applyOperator(stack, opStack.pop());
         }
 
+        if (stack.isEmpty()) {
+            System.out.println("query error no result found");
+            return new HashSet<>();
+        }
 
-        return stack.isEmpty() ? new ArrayList<>() : stack.pop();
+        return stack.pop();
     }
 
-    private void applyOperator(Stack<List<String>> stack, char operator) {
+    private void applyOperator(Stack<Set<String>> stack, char operator) {
         try {
-            List<String> list2 = stack.pop();
-            List<String> list1 = stack.pop();
+            Set<String> list2 = stack.pop();
+            Set<String> list1 = stack.pop();
 
             if (operator == '&') {
                 stack.push(intersect(list1, list2));
@@ -341,8 +346,8 @@ private Map<Integer, List<String>> index;
         }
     }
 
-    private List<String> getMatchingDocuments(String token) {
-        List<String> result = new ArrayList<>();
+    private Set<String> getMatchingDocuments(String token) {
+        Set<String> result = new HashSet<>();
         for (Map.Entry<Integer, List<String>> entry : index.entrySet()) {
             if (entry.getValue().contains(token)) {
                 result.add(entry.getKey().toString());
@@ -351,14 +356,14 @@ private Map<Integer, List<String>> index;
         return result;
     }
 
-    private List<String> intersect(List<String> list1, List<String> list2) {
-        List<String> result = new ArrayList<>(list1);
+    private Set<String> intersect(Set<String> list1, Set<String> list2) {
+        Set<String> result = new HashSet<>(list1);
         result.retainAll(list2);
         return result;
     }
 
-    private List<String> union(List<String> list1, List<String> list2) {
-        List<String> result = new ArrayList<>(list1);
+    private Set<String> union(Set<String> list1, Set<String> list2) {
+        Set<String> result = new HashSet<>(list1);
         result.addAll(list2);
         return result;
     }

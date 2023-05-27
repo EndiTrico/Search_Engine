@@ -21,11 +21,9 @@ public class Main {
 
             } else if (commandName.equals("query")) {
 
-                List<String> results = searchEngine.queryCommand(parts[1]);
+                Set<String> results = searchEngine.queryCommand(parts[1]);
 
-                if (results.isEmpty()) {
-                    System.out.println("query error not found in any document");
-                } else {
+                if (!results.isEmpty()) {
                     System.out.print("query results ");
                     for (String value : results) {
                         System.out.print(value + " ");
